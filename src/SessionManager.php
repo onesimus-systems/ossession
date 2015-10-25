@@ -40,7 +40,7 @@ class SessionManager
     /**
      * Return session data named $name. If it doesn't exist, return $else.
      * @param  mixed $name Name of session data to return
-     * @param  mixed $else Value to return if session doesn't contine data $name
+     * @param  mixed $else Value to return if session doesn't contain data $name
      * @return mixed
      */
     public static function get($name, $else = null)

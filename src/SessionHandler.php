@@ -21,13 +21,33 @@ class SessionHandler implements \SessionHandlerInterface
 
     private $sc;
 
+    /**
+     * SessionHandler constructor
+     * @param PDO $pdo - PDO object to use for connection
+     * @param array $options - Options for the session handler. Available options are:
+     *                       'gclotto' = [odds, max] Used to calculate change of a garbage collection
+     *                       'timeout' = Time in minutes a session is considered valid since its last accessed time
+     *                       'table' = Database table name to use for storage
+     *                       'sc' = An SC (Onesimus\SC) object to use instead of a raw PDO
+     */
     public function __construct(PDO $pdo, array $options)
     {
-        $this->gcLotto = array_key_exists('gclotto', $options) ? $options['gclotto'] : [1, 100];
-        $this->timeout = array_key_exists('timeout', $options) ? $options['timeout'] : 120;
-        $this->table = array_key_exists('table', $options) ? $options['table'] : '';
+        $this->gcLotto = $this->getOptions($options, 'gclotto', [1, 100]);
+        $this->timeout = $this->getOptions($options, 'timeout', 120);
+        $this->table = $this->getOptions($options, 'table', '');
+        $this->sc = $this->getOptions($options, 'sc', null);
 
-        $this->sc = new SC\SC($pdo);
+        if (is_null($this->sc)) {
+            $this->sc = new SC\SC($pdo);
+        }
+    }
+
+    private function getOptions(array $options, $name, $default)
+    {
+        if (array_key_exists($name, $options)) {
+            return $options[$name];
+        }
+        return $default;
     }
 
     public function open($savePath, $sessionName)
@@ -38,12 +58,15 @@ class SessionHandler implements \SessionHandlerInterface
         $odds = $this->gcLotto[0];
         $max = $this->gcLotto[1];
 
-        if ($max < 1) {
-            $max = 100;
-        }
+        if ($odds > 0) {
+            // If GC is enabled, do it
+            if ($max < 1) {
+                $max = 100;
+            }
 
-        if (mt_rand(0, $max - 1) < $odds) {
-            $this->gc($this->timeout);
+            if (mt_rand(0, $max - 1) < $odds) {
+                $this->gc($this->timeout);
+            }
         }
         return true;
     }
