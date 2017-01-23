@@ -105,14 +105,14 @@ class SessionHandler implements \SessionHandlerInterface
             ]);
         }
 
-        return;
+        return true;
     }
 
     public function destroy($id)
     {
         $this->sc->deleteItem($this->table, $id);
         SessionManager::clear();
-        return;
+        return true;
     }
 
     public function gc($maxlifetime)
